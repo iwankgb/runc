@@ -38,6 +38,9 @@ type Cgroup struct {
 	// derived from org.systemd.property.xxx annotations.
 	// Ignored unless systemd is used for managing cgroups.
 	SystemdProps []systemdDbus.Property `json:"-"`
+
+	// List of perf subsytem events IDs that will be measured.
+	PerfEvents []uint64
 }
 
 type Resources struct {

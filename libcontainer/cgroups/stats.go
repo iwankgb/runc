@@ -92,6 +92,21 @@ type HugetlbStats struct {
 	Failcnt uint64 `json:"failcnt"`
 }
 
+type PerfStats struct {
+	// Amount of time when event was enabled.
+	// If different then TimeRunning then multiplexing occured.
+	// You should scale Value accordingly.
+	// See man perf_event_open to learn more.
+	TimeEnabled uint64 `json:"time_enabled"`
+	// Amount of time when event was running. See TimeEnabled.
+	TimeRunning uint64 `json:"time_running"`
+	// Value of the event
+	Value uint64 `json:"value"`
+	// Event ID. The field is redundant in Stats.PerfEventStats,
+	// but allows to use the struct to pass event value around.
+	ID uint64 `json:"id"`
+}
+
 type Stats struct {
 	CpuStats    CpuStats    `json:"cpu_stats,omitempty"`
 	MemoryStats MemoryStats `json:"memory_stats,omitempty"`
@@ -99,10 +114,13 @@ type Stats struct {
 	BlkioStats  BlkioStats  `json:"blkio_stats,omitempty"`
 	// the map is in the format "size of hugepage: stats of the hugepage"
 	HugetlbStats map[string]HugetlbStats `json:"hugetlb_stats,omitempty"`
+	// the map is in the format "event id: event stats"
+	PerfStats map[uint64]PerfStats `json:"perf_event_stats,omitempty"`
 }
 
 func NewStats() *Stats {
 	memoryStats := MemoryStats{Stats: make(map[string]uint64)}
 	hugetlbStats := make(map[string]HugetlbStats)
-	return &Stats{MemoryStats: memoryStats, HugetlbStats: hugetlbStats}
+	perfStats := make(map[uint64]PerfStats)
+	return &Stats{MemoryStats: memoryStats, HugetlbStats: hugetlbStats, PerfStats: perfStats}
 }
