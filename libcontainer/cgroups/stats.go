@@ -98,10 +98,13 @@ type PerfStats struct {
 	// You should scale Value accordingly.
 	// See man perf_event_open to learn more.
 	TimeEnabled uint64 `json:"time_enabled"`
+
 	// Amount of time when event was running. See TimeEnabled.
 	TimeRunning uint64 `json:"time_running"`
+
 	// Value of the event
 	Value uint64 `json:"value"`
+
 	// Event ID. The field is redundant in Stats.PerfEventStats,
 	// but allows to use the struct to pass event value around.
 	ID uint64 `json:"id"`
@@ -114,7 +117,9 @@ type Stats struct {
 	BlkioStats  BlkioStats  `json:"blkio_stats,omitempty"`
 	// the map is in the format "size of hugepage: stats of the hugepage"
 	HugetlbStats map[string]HugetlbStats `json:"hugetlb_stats,omitempty"`
-	// the map is in the format "event id: event stats"
+	// the map is in the format "event id: event stats".
+	// Event id is sum of configuration values as described at man perf-stat
+	// for case: pmu/config=M,config1=N,config2=K/
 	PerfStats map[uint64]PerfStats `json:"perf_event_stats,omitempty"`
 }
 
