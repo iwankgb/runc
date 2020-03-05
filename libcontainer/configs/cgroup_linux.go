@@ -1,6 +1,8 @@
 package configs
 
 import (
+	"time"
+
 	systemdDbus "github.com/coreos/go-systemd/dbus"
 )
 
@@ -39,8 +41,33 @@ type Cgroup struct {
 	// Ignored unless systemd is used for managing cgroups.
 	SystemdProps []systemdDbus.Property `json:"-"`
 
-	// List of perf subsytem events IDs that will be measured.
-	PerfEvents []uint64
+	// Contains configuration of perf events to be measured.
+	Perf *Perf
+}
+
+type Perf struct {
+	// List of perf events to be measured. Events in this list
+	// will not be grouped. See group_fd argument documentation
+	// at man perf_event_open.
+	Events []PerfEvent
+
+	// List of groups of events to be measured. See group_fd
+	// argument documentation at man perf_event_open.
+	GroupedEvents [][]PerfEvent
+
+	// Interval between each measurement.
+	Interval time.Duration
+}
+
+type PerfEvent struct {
+	// Type of the event. See perf_event_attr documentation
+	// at man perf_event_open.
+	Type uint32
+
+	// Symbolically formed event like:
+	// pmu/config=PerfEvent.Config[0],config1=PerfEvent.Config[1],config2=PerfEvent.Config[2]
+	// as described in man perf-stat.
+	Config []uint64
 }
 
 type Resources struct {
