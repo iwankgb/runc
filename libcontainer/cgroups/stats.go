@@ -75,7 +75,7 @@ type PageUsageByNUMA struct {
 
 type PageStats struct {
 	Total uint64           `json:"total,omitempty"`
-	Nodes map[uint8]uint64 `json:nodes,omitempty`
+	Nodes map[uint8]uint64 `json:"nodes,omitempty"`
 }
 
 type PidsStats struct {
