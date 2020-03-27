@@ -5,6 +5,7 @@ package fs
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
 	"path"
 	"path/filepath"
@@ -293,10 +294,10 @@ func getPageUsageByNUMA(cgroupPath string) (cgroups.PageUsageByNUMAWrapped, erro
 	for scanner.Scan() {
 		var statsType string
 		pageUsage := cgroups.PageStats{Nodes: map[uint8]uint64{}}
-		values := strings.Fields(scanner.Text())
+		values := strings.SplitN(scanner.Text(), " ", math.MaxUint8+1)
 
 		for _, value := range values {
-			nodePages := strings.FieldsFunc(value, isEqualSign)
+			nodePages := strings.SplitN(value, "=", 2)
 			if len(nodePages) != 2 {
 				return cgroups.PageUsageByNUMAWrapped{}, fmt.Errorf("wrong data format, found %d fields instead of 2", len(nodePages))
 			}
@@ -328,10 +329,6 @@ func getPageUsageByNUMA(cgroupPath string) (cgroups.PageUsageByNUMAWrapped, erro
 	}
 
 	return stats, nil
-}
-
-func isEqualSign(c rune) bool {
-	return c == '='
 }
 
 func addNUMAStatsByType(stats *cgroups.PageUsageByNUMAWrapped, byTypeStats cgroups.PageStats, statsType string) error {
