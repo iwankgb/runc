@@ -18,7 +18,6 @@ rss 1024`
 	memoryFailcnt                = "100\n"
 	memoryLimitContents          = "8192\n"
 	memoryUseHierarchyContents   = "1\n"
-	memoryUseNoHierarchyContents = "0\n"
 	memoryNUMAStatContents       = `total=44611 N0=32631 N1=7501 N2=1982 N3=2497
 file=44428 N0=32614 N1=7335 N2=1982 N3=2497
 anon=183 N0=17 N1=166 N2=0 N3=0
@@ -313,7 +312,6 @@ func TestMemoryStats(t *testing.T) {
 				Unevictable: cgroups.PageStats{Total: 20, Nodes: map[uint8]uint64{0: 0, 1: 0, 2: 0, 3: 20}},
 			},
 		}}
-	//hierarchical_unevictable=20 N0=0 N1=0 N2=0 N3=20
 	expectMemoryStatEquals(t, expectedStats, actualStats.MemoryStats)
 }
 
@@ -488,18 +486,10 @@ func TestNoHierarchicalNumaStat(t *testing.T) {
 	helper := NewCgroupTestUtil("memory", t)
 	defer helper.cleanup()
 	helper.writeFileContents(map[string]string{
-		"memory.stat":               memoryStatContents,
-		"memory.usage_in_bytes":     memoryUsageContents,
-		"memory.limit_in_bytes":     memoryLimitContents,
-		"memory.max_usage_in_bytes": memoryMaxUsageContents,
-		"memory.failcnt":            memoryFailcnt,
-		"memory.use_hierarchy":      memoryUseNoHierarchyContents,
-		"memory.numa_stat":          memoryNUMAStatNoHierarchyContents,
+		"memory.numa_stat": memoryNUMAStatNoHierarchyContents,
 	})
 
-	memory := &MemoryGroup{}
-	actualStats := *cgroups.NewStats()
-	err := memory.GetStats(helper.CgroupPath, &actualStats)
+	actualStats, err := getPageUsageByNUMA(helper.CgroupPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -512,5 +502,5 @@ func TestNoHierarchicalNumaStat(t *testing.T) {
 		},
 		Hierarchical: cgroups.PageUsageByNUMA{},
 	}
-	expectPageUsageByNUMAEquals(t, pageUsageByNUMA, actualStats.MemoryStats.PageUsageByNUMA)
+	expectPageUsageByNUMAEquals(t, pageUsageByNUMA, actualStats)
 }
