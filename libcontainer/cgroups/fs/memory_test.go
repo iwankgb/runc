@@ -13,12 +13,13 @@ import (
 const (
 	memoryStatContents = `cache 512
 rss 1024`
-	memoryUsageContents        = "2048\n"
-	memoryMaxUsageContents     = "4096\n"
-	memoryFailcnt              = "100\n"
-	memoryLimitContents        = "8192\n"
-	memoryUseHierarchyContents = "1\n"
-	memoryNUMAStatContents     = `total=44611 N0=32631 N1=7501 N2=1982 N3=2497
+	memoryUsageContents          = "2048\n"
+	memoryMaxUsageContents       = "4096\n"
+	memoryFailcnt                = "100\n"
+	memoryLimitContents          = "8192\n"
+	memoryUseHierarchyContents   = "1\n"
+	memoryUseNoHierarchyContents = "0\n"
+	memoryNUMAStatContents       = `total=44611 N0=32631 N1=7501 N2=1982 N3=2497
 file=44428 N0=32614 N1=7335 N2=1982 N3=2497
 anon=183 N0=17 N1=166 N2=0 N3=0
 unevictable=0 N0=0 N1=0 N2=0 N3=0
@@ -26,6 +27,10 @@ hierarchical_total=768133 N0=509113 N1=138887 N2=20464 N3=99669
 hierarchical_file=722017 N0=496516 N1=119997 N2=20181 N3=85323
 hierarchical_anon=46096 N0=12597 N1=18890 N2=283 N3=14326
 hierarchical_unevictable=20 N0=0 N1=0 N2=0 N3=20`
+	memoryNUMAStatNoHierarchyContents = `total=44611 N0=32631 N1=7501 N2=1982 N3=2497
+file=44428 N0=32614 N1=7335 N2=1982 N3=2497
+anon=183 N0=17 N1=166 N2=0 N3=0
+unevictable=0 N0=0 N1=0 N2=0 N3=0`
 )
 
 func TestMemorySetMemory(t *testing.T) {
@@ -477,4 +482,35 @@ func TestMemorySetOomControl(t *testing.T) {
 	if value != oomKillDisable {
 		t.Fatalf("Got the wrong value, set memory.oom_control failed.")
 	}
+}
+
+func TestNoHierarchicalNumaStat(t *testing.T) {
+	helper := NewCgroupTestUtil("memory", t)
+	defer helper.cleanup()
+	helper.writeFileContents(map[string]string{
+		"memory.stat":               memoryStatContents,
+		"memory.usage_in_bytes":     memoryUsageContents,
+		"memory.limit_in_bytes":     memoryLimitContents,
+		"memory.max_usage_in_bytes": memoryMaxUsageContents,
+		"memory.failcnt":            memoryFailcnt,
+		"memory.use_hierarchy":      memoryUseNoHierarchyContents,
+		"memory.numa_stat":          memoryNUMAStatNoHierarchyContents,
+	})
+
+	memory := &MemoryGroup{}
+	actualStats := *cgroups.NewStats()
+	err := memory.GetStats(helper.CgroupPath, &actualStats)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pageUsageByNUMA := cgroups.PageUsageByNUMAWrapped{
+		PageUsageByNUMA: cgroups.PageUsageByNUMA{
+			Total:       cgroups.PageStats{Total: 44611, Nodes: map[uint8]uint64{0: 32631, 1: 7501, 2: 1982, 3: 2497}},
+			File:        cgroups.PageStats{Total: 44428, Nodes: map[uint8]uint64{0: 32614, 1: 7335, 2: 1982, 3: 2497}},
+			Anon:        cgroups.PageStats{Total: 183, Nodes: map[uint8]uint64{0: 17, 1: 166, 2: 0, 3: 0}},
+			Unevictable: cgroups.PageStats{Total: 0, Nodes: map[uint8]uint64{0: 0, 1: 0, 2: 0, 3: 0}},
+		},
+		Hierarchical: cgroups.PageUsageByNUMA{},
+	}
+	expectPageUsageByNUMAEquals(t, pageUsageByNUMA, actualStats.MemoryStats.PageUsageByNUMA)
 }
