@@ -13,12 +13,12 @@ import (
 const (
 	memoryStatContents = `cache 512
 rss 1024`
-	memoryUsageContents          = "2048\n"
-	memoryMaxUsageContents       = "4096\n"
-	memoryFailcnt                = "100\n"
-	memoryLimitContents          = "8192\n"
-	memoryUseHierarchyContents   = "1\n"
-	memoryNUMAStatContents       = `total=44611 N0=32631 N1=7501 N2=1982 N3=2497
+	memoryUsageContents        = "2048\n"
+	memoryMaxUsageContents     = "4096\n"
+	memoryFailcnt              = "100\n"
+	memoryLimitContents        = "8192\n"
+	memoryUseHierarchyContents = "1\n"
+	memoryNUMAStatContents     = `total=44611 N0=32631 N1=7501 N2=1982 N3=2497
 file=44428 N0=32614 N1=7335 N2=1982 N3=2497
 anon=183 N0=17 N1=166 N2=0 N3=0
 unevictable=0 N0=0 N1=0 N2=0 N3=0
@@ -298,14 +298,14 @@ func TestMemoryStats(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedStats := cgroups.MemoryStats{Cache: 512, Usage: cgroups.MemoryData{Usage: 2048, MaxUsage: 4096, Failcnt: 100, Limit: 8192}, SwapUsage: cgroups.MemoryData{Usage: 2048, MaxUsage: 4096, Failcnt: 100, Limit: 8192}, KernelUsage: cgroups.MemoryData{Usage: 2048, MaxUsage: 4096, Failcnt: 100, Limit: 8192}, Stats: map[string]uint64{"cache": 512, "rss": 1024}, UseHierarchy: true,
-		PageUsageByNUMA: cgroups.PageUsageByNUMAWrapped{
-			PageUsageByNUMA: cgroups.PageUsageByNUMA{
+		PageUsageByNUMA: cgroups.PageUsageByNUMA{
+			PageUsageByNUMAInner: cgroups.PageUsageByNUMAInner{
 				Total:       cgroups.PageStats{Total: 44611, Nodes: map[uint8]uint64{0: 32631, 1: 7501, 2: 1982, 3: 2497}},
 				File:        cgroups.PageStats{Total: 44428, Nodes: map[uint8]uint64{0: 32614, 1: 7335, 2: 1982, 3: 2497}},
 				Anon:        cgroups.PageStats{Total: 183, Nodes: map[uint8]uint64{0: 17, 1: 166, 2: 0, 3: 0}},
 				Unevictable: cgroups.PageStats{Total: 0, Nodes: map[uint8]uint64{0: 0, 1: 0, 2: 0, 3: 0}},
 			},
-			Hierarchical: cgroups.PageUsageByNUMA{
+			Hierarchical: cgroups.PageUsageByNUMAInner{
 				Total:       cgroups.PageStats{Total: 768133, Nodes: map[uint8]uint64{0: 509113, 1: 138887, 2: 20464, 3: 99669}},
 				File:        cgroups.PageStats{Total: 722017, Nodes: map[uint8]uint64{0: 496516, 1: 119997, 2: 20181, 3: 85323}},
 				Anon:        cgroups.PageStats{Total: 46096, Nodes: map[uint8]uint64{0: 12597, 1: 18890, 2: 283, 3: 14326}},
@@ -493,14 +493,14 @@ func TestNoHierarchicalNumaStat(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	pageUsageByNUMA := cgroups.PageUsageByNUMAWrapped{
-		PageUsageByNUMA: cgroups.PageUsageByNUMA{
+	pageUsageByNUMA := cgroups.PageUsageByNUMA{
+		PageUsageByNUMAInner: cgroups.PageUsageByNUMAInner{
 			Total:       cgroups.PageStats{Total: 44611, Nodes: map[uint8]uint64{0: 32631, 1: 7501, 2: 1982, 3: 2497}},
 			File:        cgroups.PageStats{Total: 44428, Nodes: map[uint8]uint64{0: 32614, 1: 7335, 2: 1982, 3: 2497}},
 			Anon:        cgroups.PageStats{Total: 183, Nodes: map[uint8]uint64{0: 17, 1: 166, 2: 0, 3: 0}},
 			Unevictable: cgroups.PageStats{Total: 0, Nodes: map[uint8]uint64{0: 0, 1: 0, 2: 0, 3: 0}},
 		},
-		Hierarchical: cgroups.PageUsageByNUMA{},
+		Hierarchical: cgroups.PageUsageByNUMAInner{},
 	}
 	expectPageUsageByNUMAEquals(t, pageUsageByNUMA, actualStats)
 }

@@ -19,8 +19,11 @@ import (
 )
 
 const (
-	cgroupMemorySwapLimit = "memory.memsw.limit_in_bytes"
-	cgroupMemoryLimit     = "memory.limit_in_bytes"
+	numaStatColumnSeparator   = " "
+	numaStatKeyValueSeparator = "="
+	numaStatMaxColumns        = math.MaxUint8 + 1
+	cgroupMemorySwapLimit     = "memory.memsw.limit_in_bytes"
+	cgroupMemoryLimit         = "memory.limit_in_bytes"
 )
 
 var isNUMANode = regexp.MustCompile("N[0-9]+")
@@ -282,8 +285,8 @@ func getMemoryData(path, name string) (cgroups.MemoryData, error) {
 	return memoryData, nil
 }
 
-func getPageUsageByNUMA(cgroupPath string) (cgroups.PageUsageByNUMAWrapped, error) {
-	stats := cgroups.PageUsageByNUMAWrapped{}
+func getPageUsageByNUMA(cgroupPath string) (cgroups.PageUsageByNUMA, error) {
+	stats := cgroups.PageUsageByNUMA{}
 
 	file, err := os.Open(path.Join(cgroupPath, "memory.numa_stat"))
 	if err != nil {
@@ -293,37 +296,37 @@ func getPageUsageByNUMA(cgroupPath string) (cgroups.PageUsageByNUMAWrapped, erro
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		var statsType string
-		pageUsage := cgroups.PageStats{Nodes: map[uint8]uint64{}}
-		values := strings.SplitN(scanner.Text(), " ", math.MaxUint8+1)
+		statsByType := cgroups.PageStats{Nodes: map[uint8]uint64{}}
+		columns := strings.SplitN(scanner.Text(), numaStatColumnSeparator, numaStatMaxColumns)
 
-		for _, value := range values {
-			nodePages := strings.SplitN(value, "=", 2)
-			if len(nodePages) != 2 {
-				return cgroups.PageUsageByNUMAWrapped{}, fmt.Errorf("wrong data format, found %d fields instead of 2", len(nodePages))
+		for _, column := range columns {
+			pagesByNode := strings.SplitN(column, numaStatKeyValueSeparator, 2)
+			if len(pagesByNode) != 2 {
+				return cgroups.PageUsageByNUMA{}, fmt.Errorf("wrong data format, found %d fields instead of 2", len(pagesByNode))
 			}
 
-			if isNUMANode.MatchString(nodePages[0]) {
-				nodeID, err := strconv.ParseUint(nodePages[0][1:], 10, 8)
+			if isNUMANode.MatchString(pagesByNode[0]) {
+				nodeID, err := strconv.ParseUint(pagesByNode[0][1:], 10, 8)
 				if err != nil {
-					return cgroups.PageUsageByNUMAWrapped{}, err
+					return cgroups.PageUsageByNUMA{}, err
 				}
 
-				pageUsage.Nodes[uint8(nodeID)], err = strconv.ParseUint(nodePages[1], 0, 64)
+				statsByType.Nodes[uint8(nodeID)], err = strconv.ParseUint(pagesByNode[1], 0, 64)
 				if err != nil {
-					return cgroups.PageUsageByNUMAWrapped{}, err
+					return cgroups.PageUsageByNUMA{}, err
 				}
 			} else {
-				pageUsage.Total, err = strconv.ParseUint(nodePages[1], 0, 64)
+				statsByType.Total, err = strconv.ParseUint(pagesByNode[1], 0, 64)
 				if err != nil {
-					return cgroups.PageUsageByNUMAWrapped{}, err
+					return cgroups.PageUsageByNUMA{}, err
 				}
 
-				statsType = nodePages[0]
+				statsType = pagesByNode[0]
 			}
 
-			err := addNUMAStatsByType(&stats, pageUsage, statsType)
+			err := addNUMAStatsByType(&stats, statsByType, statsType)
 			if err != nil {
-				return cgroups.PageUsageByNUMAWrapped{}, err
+				return cgroups.PageUsageByNUMA{}, err
 			}
 		}
 	}
@@ -331,7 +334,7 @@ func getPageUsageByNUMA(cgroupPath string) (cgroups.PageUsageByNUMAWrapped, erro
 	return stats, nil
 }
 
-func addNUMAStatsByType(stats *cgroups.PageUsageByNUMAWrapped, byTypeStats cgroups.PageStats, statsType string) error {
+func addNUMAStatsByType(stats *cgroups.PageUsageByNUMA, byTypeStats cgroups.PageStats, statsType string) error {
 	switch statsType {
 	case "total":
 		stats.Total = byTypeStats

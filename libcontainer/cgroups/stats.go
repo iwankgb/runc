@@ -53,20 +53,20 @@ type MemoryStats struct {
 	KernelTCPUsage MemoryData `json:"kernel_tcp_usage,omitempty"`
 	// usage of memory pages by NUMA node
 	// see chapter 5.6 of memory controller documentation
-	PageUsageByNUMA PageUsageByNUMAWrapped `json:"page_usage_by_numa,omitempty"`
+	PageUsageByNUMA PageUsageByNUMA `json:"page_usage_by_numa,omitempty"`
 	// if true, memory usage is accounted for throughout a hierarchy of cgroups.
 	UseHierarchy bool `json:"use_hierarchy"`
 
 	Stats map[string]uint64 `json:"stats,omitempty"`
 }
 
-type PageUsageByNUMAWrapped struct {
+type PageUsageByNUMA struct {
 	// Embedding is used as types can't be recursive.
-	PageUsageByNUMA
-	Hierarchical PageUsageByNUMA `json:"hierarchical,omitempty"`
+	PageUsageByNUMAInner
+	Hierarchical PageUsageByNUMAInner `json:"hierarchical,omitempty"`
 }
 
-type PageUsageByNUMA struct {
+type PageUsageByNUMAInner struct {
 	Total       PageStats `json:"total,omitempty"`
 	File        PageStats `json:"file,omitempty"`
 	Anon        PageStats `json:"anon,omitempty"`

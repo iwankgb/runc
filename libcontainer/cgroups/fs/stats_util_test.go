@@ -105,7 +105,7 @@ func expectMemoryDataEquals(t *testing.T, expected, actual cgroups.MemoryData) {
 	}
 }
 
-func expectPageUsageByNUMAEquals(t *testing.T, expected, actual cgroups.PageUsageByNUMAWrapped) {
+func expectPageUsageByNUMAEquals(t *testing.T, expected, actual cgroups.PageUsageByNUMA) {
 	if !reflect.DeepEqual(expected.Total, actual.Total) {
 		t.Errorf("Expected total page usage by NUMA %#v but found %#v", expected.Total, actual.Total)
 	}
