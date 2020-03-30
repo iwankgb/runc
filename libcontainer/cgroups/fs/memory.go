@@ -22,12 +22,12 @@ const (
 	numaStatColumnSeparator   = " "
 	numaStatKeyValueSeparator = "="
 	numaStatMaxColumns        = math.MaxUint8 + 1
-	numaStatFileName          = "memory.numa_stat"
 	numaStatValueIndex        = 1
 	numaStatTypeIndex         = 0
 	numaStatColumnSliceLength = 2
 	cgroupMemorySwapLimit     = "memory.memsw.limit_in_bytes"
 	cgroupMemoryLimit         = "memory.limit_in_bytes"
+	cgroupMemoryPagesByNuma   = "memory.numa_stat"
 )
 
 var isNUMANode = regexp.MustCompile("N[0-9]+")
@@ -292,7 +292,7 @@ func getMemoryData(path, name string) (cgroups.MemoryData, error) {
 func getPageUsageByNUMA(cgroupPath string) (cgroups.PageUsageByNUMA, error) {
 	stats := cgroups.PageUsageByNUMA{}
 
-	file, err := os.Open(path.Join(cgroupPath, numaStatFileName))
+	file, err := os.Open(path.Join(cgroupPath, cgroupMemoryPagesByNuma))
 	if err != nil {
 		return stats, err
 	}
