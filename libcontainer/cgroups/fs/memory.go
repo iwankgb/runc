@@ -22,6 +22,10 @@ const (
 	numaStatColumnSeparator   = " "
 	numaStatKeyValueSeparator = "="
 	numaStatMaxColumns        = math.MaxUint8 + 1
+	numaStatFileName          = "memory.numa_stat"
+	numaStatValueIndex        = 1
+	numaStatTypeIndex         = 0
+	numaStatColumnSliceLength = 2
 	cgroupMemorySwapLimit     = "memory.memsw.limit_in_bytes"
 	cgroupMemoryLimit         = "memory.limit_in_bytes"
 )
@@ -288,7 +292,7 @@ func getMemoryData(path, name string) (cgroups.MemoryData, error) {
 func getPageUsageByNUMA(cgroupPath string) (cgroups.PageUsageByNUMA, error) {
 	stats := cgroups.PageUsageByNUMA{}
 
-	file, err := os.Open(path.Join(cgroupPath, "memory.numa_stat"))
+	file, err := os.Open(path.Join(cgroupPath, numaStatFileName))
 	if err != nil {
 		return stats, err
 	}
@@ -300,28 +304,28 @@ func getPageUsageByNUMA(cgroupPath string) (cgroups.PageUsageByNUMA, error) {
 		columns := strings.SplitN(scanner.Text(), numaStatColumnSeparator, numaStatMaxColumns)
 
 		for _, column := range columns {
-			pagesByNode := strings.SplitN(column, numaStatKeyValueSeparator, 2)
-			if len(pagesByNode) != 2 {
+			pagesByNode := strings.SplitN(column, numaStatKeyValueSeparator, numaStatColumnSliceLength)
+			if len(pagesByNode) != numaStatColumnSliceLength {
 				return cgroups.PageUsageByNUMA{}, fmt.Errorf("wrong data format, found %d fields instead of 2", len(pagesByNode))
 			}
 
-			if isNUMANode.MatchString(pagesByNode[0]) {
-				nodeID, err := strconv.ParseUint(pagesByNode[0][1:], 10, 8)
+			if isNUMANode.MatchString(pagesByNode[numaStatTypeIndex]) {
+				nodeID, err := strconv.ParseUint(pagesByNode[numaStatTypeIndex][1:], 10, 8)
 				if err != nil {
 					return cgroups.PageUsageByNUMA{}, err
 				}
 
-				statsByType.Nodes[uint8(nodeID)], err = strconv.ParseUint(pagesByNode[1], 0, 64)
+				statsByType.Nodes[uint8(nodeID)], err = strconv.ParseUint(pagesByNode[numaStatValueIndex], 0, 64)
 				if err != nil {
 					return cgroups.PageUsageByNUMA{}, err
 				}
 			} else {
-				statsByType.Total, err = strconv.ParseUint(pagesByNode[1], 0, 64)
+				statsByType.Total, err = strconv.ParseUint(pagesByNode[numaStatValueIndex], 0, 64)
 				if err != nil {
 					return cgroups.PageUsageByNUMA{}, err
 				}
 
-				statsType = pagesByNode[0]
+				statsType = pagesByNode[numaStatTypeIndex]
 			}
 
 			err := addNUMAStatsByType(&stats, statsByType, statsType)
